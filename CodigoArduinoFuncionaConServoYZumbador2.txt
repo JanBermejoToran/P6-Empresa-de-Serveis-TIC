@@ -1,0 +1,94 @@
+#include <Keypad.h>
+#include <Servo.h>
+Servo servoMotor;
+const byte verde = 10;
+const byte blanco = 11;
+const byte azul = 12;
+const byte files = 4; 
+const byte columnes = 4;
+byte pinsFiles[]  = {9,8,7,6};
+byte pinsColumnes[] = {5,4,3,2};
+char tecles[files][columnes] = {
+  {'1','2','3','A'},
+  {'4','5','6','B'},
+  {'7','8','9','C'},
+  {'*','0','#','D'}
+};
+
+Keypad teclat1 = Keypad(makeKeymap(tecles), pinsFiles, pinsColumnes, files, columnes);
+
+byte cantidad;
+byte a;
+String codigoCorrecto[] = {"1234","7777","9102"};
+String codigo = "";
+byte ledV[] = {verde,blanco,azul};
+byte ledR =A0;
+byte zumbador = A1;
+bool bien=false;
+
+void setup() {
+  cantidad = sizeof(codigoCorrecto) / sizeof(codigoCorrecto[0]);
+  Serial.begin(9600);
+  Serial.println("Teclat 4x4 amb Biblioteca Keypad");
+  Serial.println();
+  for(a=0; a<=(cantidad-1);a++){
+  	pinMode(ledV[a],OUTPUT);
+  }
+  pinMode(ledR,OUTPUT);
+  pinMode(zumbador,OUTPUT);
+  servoMotor.attach(13);
+  servoMotor.write(0);
+}
+
+void loop() {
+  char tecla_premuda = teclat1.getKey();
+  
+  if (tecla_premuda) {
+    codigo += tecla_premuda;
+    for(a=0; a<=(cantidad-1);a++){
+  		digitalWrite(ledV[a], LOW);
+  	}
+    digitalWrite(ledR, LOW);
+    noTone(zumbador);
+    servoMotor.write(0);
+    bien = false;
+    Serial.print("Tecla: ");
+    Serial.println(tecla_premuda);
+    Serial.println(codigo);
+    if(codigo.length()>=4){
+      	for(a=0; a<=(cantidad-1);a++){
+  			if(codigo==codigoCorrecto[a]){
+                	digitalWrite(ledV[a], HIGH);
+              		servoMotor.write(90);
+              		bien = true;
+              		correcto();
+              		servoMotor.write(0);
+              		digitalWrite(ledV[a], LOW);
+                
+        	}
+  		}
+      	if(bien==false){
+          digitalWrite(ledR, HIGH);
+          error();
+          digitalWrite(ledR, LOW);
+      	}
+     	codigo="";
+    }
+  }
+}
+void error() {
+  tone(zumbador, 600, 200);
+  delay(150);
+  tone(zumbador, 400, 400);
+  delay(1000);
+  noTone(zumbador);
+}
+void correcto() {
+  for (byte i = 0; i <= 8; i++) {
+    tone(zumbador, 1000, 200);
+    delay(1000);
+  }
+  tone(zumbador, 1000, 700);
+  delay(1000);
+  noTone(zumbador);
+}
